@@ -52,6 +52,7 @@ import ch.njol.skript.util.Utils;
 import ch.njol.skript.util.Version;
 import ch.njol.skript.util.chat.BungeeConverter;
 import ch.njol.skript.util.chat.ChatMessages;
+import ch.njol.skript.util.region.TaskUtils;
 import ch.njol.skript.variables.Variables;
 import ch.njol.util.Closeable;
 import ch.njol.util.Kleenean;
@@ -389,6 +390,9 @@ public final class Skript extends JavaPlugin implements Listener {
 
 	@Override
 	public void onEnable() {
+		// SkriptFolia start - initialize task utils
+		TaskUtils.initialize(this, true);
+		// SkriptFolia end - initialize task utils
 		Bukkit.getPluginManager().registerEvents(this, this);
 		if (disabled) {
 			Skript.error(m_invalid_reload.toString());
@@ -601,7 +605,7 @@ public final class Skript extends JavaPlugin implements Listener {
 			info(" " + Language.get("skript.copyright"));
 
 		final long tick = testing() ? Bukkit.getWorlds().get(0).getFullTime() : 0;
-		Bukkit.getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+		TaskUtils.getGlobalScheduler().runTask( new Runnable() { // SkriptFolia - Change to global scheduler
 			@SuppressWarnings("synthetic-access")
 			@Override
 			public void run() {
@@ -753,12 +757,11 @@ public final class Skript extends JavaPlugin implements Listener {
 										|| !record.getMessage().toLowerCase(Locale.ENGLISH).startsWith("can't keep up!");
 								};
 								BukkitLoggerFilter.addFilter(filter);
-								Bukkit.getScheduler().scheduleSyncDelayedTask(
-									Skript.this,
+								TaskUtils.getGlobalScheduler().runTaskLater( // SkriptFolia - Change to global scheduler
 									() -> BukkitLoggerFilter.removeFilter(filter),
 									1);
 							} else {
-								Bukkit.getScheduler().scheduleSyncDelayedTask(Skript.this,
+								TaskUtils.getGlobalScheduler().runTask( // SkriptFolia - Change to global scheduler
 									EvtSkript::onSkriptStart);
 							}
 						} catch (Exception e) {
@@ -807,9 +810,7 @@ public final class Skript extends JavaPlugin implements Listener {
 			if (!event.getPlayer().hasPermission("skript.admin"))
 				return;
 
-			new Task(Skript.this, 0) {
-				@Override
-				public void run() {
+			TaskUtils.getEntityScheduler(event.getPlayer()).runTask(() -> {
 					Player player = event.getPlayer();
 					SkriptUpdater updater = getUpdater();
 
@@ -826,8 +827,7 @@ public final class Skript extends JavaPlugin implements Listener {
 					Skript.info(player, SkriptUpdater.m_update_available.toString(update.id, Skript.getVersion()));
 					player.spigot().sendMessage(BungeeConverter.convert(ChatMessages.parseToArray(
 						"Download it at: <aqua><u><link:" + update.downloadUrl + ">" + update.downloadUrl)));
-				}
-			};
+			});
 		}
   	}
 
@@ -938,7 +938,7 @@ public final class Skript extends JavaPlugin implements Listener {
 			info("Testing done, shutting down the server in " + display + " second" + (display == 1 ? "" : "s") + "...");
 
 			// Delay server shutdown to stop the server from crashing because the current tick takes a long time due to all the tests
-			Bukkit.getScheduler().runTaskLater(Skript.this, () -> {
+			TaskUtils.getGlobalScheduler().runTaskLater(() -> {  // SkriptFolia - Change to global scheduler
 				info("Shutting down server.");
 				if (TestMode.JUNIT && !EffObjectives.isJUnitComplete())
 					EffObjectives.fail();
@@ -1289,7 +1289,8 @@ public final class Skript extends JavaPlugin implements Listener {
 			beforeDisable();
 		}
 
-		Bukkit.getScheduler().cancelTasks(this);
+		TaskUtils.cancelTasks(); // SkriptFolia
+		//Bukkit.getScheduler().cancelTasks(this);
 
 		for (Closeable c : closeOnDisable) {
 			try {
