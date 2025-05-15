@@ -39,7 +39,7 @@ import java.util.WeakHashMap;
 public class Delay extends Effect {
 
 	static {
-		Skript.registerEffect(Delay.class, "(wait|halt) [for] %timespan% [for %entity/location/block%)]");
+		Skript.registerEffect(Delay.class, "(wait|halt) [for] %timespan% [for %-entity/location/block%)]");
 	}
 
 	@SuppressWarnings("NotNullFieldNotInitialized")
