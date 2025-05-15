@@ -6,6 +6,7 @@ import ch.njol.skript.doc.*;
 import ch.njol.skript.lang.*;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.sections.EffSecSpawn.SpawnEvent;
+import ch.njol.skript.test.runner.TestMode;
 import ch.njol.skript.timings.SkriptTimings;
 import ch.njol.skript.util.Direction;
 import ch.njol.skript.variables.Variables;
@@ -198,6 +199,10 @@ public class EffTeleport extends Effect {
 		Stream<TeleportFlag> teleportFlags = Arrays.stream(skriptTeleportFlags)
 				.flatMap(teleportFlag -> Stream.of(teleportFlag.getTeleportFlags()))
 				.filter(Objects::nonNull);
+		if (TestMode.ENABLED) {
+			entity.teleport(location, teleportFlags.toArray(TeleportFlag[]::new));
+			return;
+		}
 		entity.teleportAsync(location, PlayerTeleportEvent.TeleportCause.PLUGIN, teleportFlags.toArray(TeleportFlag[]::new));
 	}
 
