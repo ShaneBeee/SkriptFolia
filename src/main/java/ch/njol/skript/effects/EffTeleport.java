@@ -192,7 +192,11 @@ public class EffTeleport extends Effect {
 		}
 
 		if (!TELEPORT_FLAGS_SUPPORTED || skriptTeleportFlags == null) {
-			entity.teleportAsync(location);
+			if (TestMode.ENABLED) {
+				entity.teleport(location);
+			} else {
+				entity.teleportAsync(location);
+			}
 			return;
 		}
 
