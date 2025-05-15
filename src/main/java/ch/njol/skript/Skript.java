@@ -391,7 +391,8 @@ public final class Skript extends JavaPlugin implements Listener {
 	@Override
 	public void onEnable() {
 		// SkriptFolia start - initialize task utils
-		TaskUtils.initialize(this, true);
+		boolean folia = Skript.classExists("io.papermc.paper.threadedregions.scheduler.GlobalRegionScheduler");
+		TaskUtils.initialize(this, folia);
 		// SkriptFolia end - initialize task utils
 		Bukkit.getPluginManager().registerEvents(this, this);
 		if (disabled) {
