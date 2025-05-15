@@ -18,6 +18,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.event.Event;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -66,6 +67,9 @@ public class EffTeleport extends Effect {
 		entities = (Expression<Entity>) exprs[0];
 		location = Direction.combine((Expression<? extends Direction>) exprs[1], (Expression<? extends Location>) exprs[2]);
 		async = CAN_RUN_ASYNC && !parseResult.hasTag("force");
+		if (parseResult.hasTag("force")) {
+			Skript.warning("Folia requires all teleports to be async, thus 'force' will not work.");
+		}
 		if (TELEPORT_FLAGS_SUPPORTED)
 			teleportFlags = (Expression<SkriptTeleportFlag>) exprs[3];
 
@@ -187,14 +191,14 @@ public class EffTeleport extends Effect {
 		}
 
 		if (!TELEPORT_FLAGS_SUPPORTED || skriptTeleportFlags == null) {
-			entity.teleport(location);
+			entity.teleportAsync(location);
 			return;
 		}
 
 		Stream<TeleportFlag> teleportFlags = Arrays.stream(skriptTeleportFlags)
 				.flatMap(teleportFlag -> Stream.of(teleportFlag.getTeleportFlags()))
 				.filter(Objects::nonNull);
-		entity.teleport(location, teleportFlags.toArray(TeleportFlag[]::new));
+		entity.teleportAsync(location, PlayerTeleportEvent.TeleportCause.PLUGIN, teleportFlags.toArray(TeleportFlag[]::new));
 	}
 
 }
