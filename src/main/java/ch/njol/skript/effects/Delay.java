@@ -39,7 +39,7 @@ import java.util.WeakHashMap;
 public class Delay extends Effect {
 
 	static {
-		Skript.registerEffect(Delay.class, "(wait|halt) [for] %timespan% [for %-entity/location/block%)]");
+		Skript.registerEffect(Delay.class, "(wait|halt) [for] %timespan% [for %-entity/location/block%]");
 	}
 
 	@SuppressWarnings("NotNullFieldNotInitialized")
@@ -85,7 +85,11 @@ public class Delay extends Effect {
 			Object localVars = Variables.removeLocals(event);
 
 			Scheduler<?> scheduler;
-			Object object = this.object.getOptionalSingle(event).orElse(null);
+			Object object = null;
+			if (this.object != null) {
+				object = this.object.getOptionalSingle(event).orElse(null);
+			}
+
 			if (object instanceof Entity entity) {
 				scheduler = TaskUtils.getEntityScheduler(entity);
 			} else if (object instanceof Location location) {
