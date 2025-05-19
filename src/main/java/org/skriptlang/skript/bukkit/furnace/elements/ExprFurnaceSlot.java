@@ -12,6 +12,7 @@ import ch.njol.skript.lang.ExpressionType;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.lang.util.SimpleExpression;
 import ch.njol.skript.registrations.EventValues;
+import ch.njol.skript.util.region.TaskUtils;
 import ch.njol.skript.util.slot.InventorySlot;
 import ch.njol.skript.util.slot.Slot;
 import ch.njol.util.Kleenean;
@@ -217,7 +218,8 @@ public class ExprFurnaceSlot extends SimpleExpression<Slot> {
 				furnaceSmeltEvent.setResult(item != null ? item : new ItemStack(Material.AIR));
 			} else {
 				if (getTime() == EventValues.TIME_FUTURE) { // Since this is a future expression, run it AFTER the event
-					Bukkit.getScheduler().scheduleSyncDelayedTask(Skript.getInstance(), () -> FurnaceEventSlot.super.setItem(item));
+					// TODO - this may or may not be right (might need a region scheduler?!?!)
+					TaskUtils.getGlobalScheduler().runTask(() -> FurnaceEventSlot.super.setItem(item));
 				} else {
 					super.setItem(item);
 				}
