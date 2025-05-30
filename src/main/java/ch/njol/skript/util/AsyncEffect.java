@@ -1,5 +1,6 @@
 package ch.njol.skript.util;
 
+import ch.njol.skript.util.region.TaskUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Event;
 import org.jetbrains.annotations.Nullable;
@@ -34,7 +35,7 @@ public abstract class AsyncEffect extends Effect {
 		if (!Skript.getInstance().isEnabled()) // See https://github.com/SkriptLang/Skript/issues/3702
 			return null;
 
-		Bukkit.getScheduler().runTaskAsynchronously(Skript.getInstance(), () -> {
+		TaskUtils.getGlobalScheduler().runTaskAsync(() -> {
 			// Re-set local variables
 			if (localVars != null)
 				Variables.setLocalVariables(e, localVars);
@@ -42,7 +43,7 @@ public abstract class AsyncEffect extends Effect {
 			execute(e); // Execute this effect
 			
 			if (getNext() != null) {
-				Bukkit.getScheduler().runTask(Skript.getInstance(), () -> { // Walk to next item synchronously
+				TaskUtils.getGlobalScheduler().runTask( () -> { // Walk to next item synchronously
 					Object timing = null;
 					if (SkriptTimings.enabled()) { // getTrigger call is not free, do it only if we must
 						Trigger trigger = getTrigger();
