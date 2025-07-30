@@ -75,9 +75,6 @@ public class Delay extends Effect {
 			Timespan duration = this.duration.getSingle(event);
 			if (duration == null)
 				return null;
-			
-			// Back up local variables
-			Object localVars = Variables.removeLocals(event);
 
 			Scheduler<?> scheduler;
 			Object object = null;
@@ -94,6 +91,9 @@ public class Delay extends Effect {
 			} else {
 				scheduler = TaskUtils.getGlobalScheduler();
 			}
+
+			// Back up local variables
+			Object localVars = Variables.removeLocals(event);
 
 			scheduler.runTaskLater(() -> {
 				Skript.debug(getIndentation() + "... continuing after " + (System.nanoTime() - start) / 1_000_000_000. + "s");
