@@ -80,9 +80,6 @@ public class Delay extends Effect {
 			Timespan duration = this.duration.getSingle(event);
 			if (duration == null)
 				return null;
-			
-			// Back up local variables
-			Object localVars = Variables.removeLocals(event);
 
 			Scheduler<?> scheduler;
 			Object object = null;
@@ -100,6 +97,25 @@ public class Delay extends Effect {
 				scheduler = TaskUtils.getGlobalScheduler();
 			}
 
+			Scheduler<?> scheduler;
+			Object object = null;
+			if (this.object != null) {
+				object = this.object.getOptionalSingle(event).orElse(null);
+			}
+
+			if (object instanceof Entity entity) {
+				scheduler = TaskUtils.getEntityScheduler(entity);
+			} else if (object instanceof Location location) {
+				scheduler = TaskUtils.getRegionalScheduler(location);
+			} else if (object instanceof Block block) {
+				scheduler = TaskUtils.getRegionalScheduler(block.getLocation());
+			} else {
+				scheduler = TaskUtils.getGlobalScheduler();
+			}
+
+      // Back up local variables
+			Object localVars = Variables.removeLocals(event);
+      
 			scheduler.runTaskLater(() -> {
 				Skript.debug(getIndentation() + "... continuing after " + (System.nanoTime() - start) / 1_000_000_000. + "s");
 
