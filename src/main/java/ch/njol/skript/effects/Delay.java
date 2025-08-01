@@ -99,7 +99,7 @@ public class Delay extends Effect {
 
 			// Back up local variables
 			Object localVars = Variables.removeLocals(event);
-      
+
 			scheduler.runTaskLater(() -> {
 				Skript.debug(getIndentation() + "... continuing after " + (System.nanoTime() - start) / 1_000_000_000. + "s");
 
