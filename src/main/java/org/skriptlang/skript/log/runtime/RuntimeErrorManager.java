@@ -2,8 +2,9 @@ package org.skriptlang.skript.log.runtime;
 
 import ch.njol.skript.Skript;
 import ch.njol.skript.SkriptConfig;
-import ch.njol.skript.util.Task;
 import ch.njol.skript.util.Timespan;
+import ch.njol.skript.util.region.TaskUtils;
+import ch.njol.skript.util.region.scheduler.task.Task;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.skriptlang.skript.log.runtime.Frame.FrameLimit;
@@ -68,7 +69,7 @@ public class RuntimeErrorManager implements Closeable {
 	}
 
 	private final Frame errorFrame, warningFrame;
-	private final Task task;
+	private final Task<?> task;
 
 	private final List<RuntimeErrorConsumer> consumers = new ArrayList<>();
 
@@ -84,16 +85,13 @@ public class RuntimeErrorManager implements Closeable {
 	public RuntimeErrorManager(int frameLength, FrameLimit errorLimits, FrameLimit warningLimits) {
 		errorFrame = new Frame(errorLimits);
 		warningFrame = new Frame(warningLimits);
-		task = new Task(Skript.getInstance(), frameLength, frameLength, true) {
-			@Override
-			public void run() {
-				consumers.forEach(consumer -> consumer.printFrameOutput(errorFrame.getFrameOutput(), Level.SEVERE));
-				errorFrame.nextFrame();
+		this.task = TaskUtils.getGlobalScheduler().runTaskTimerAsync(() -> {
+			consumers.forEach(consumer -> consumer.printFrameOutput(errorFrame.getFrameOutput(), Level.SEVERE));
+			errorFrame.nextFrame();
 
-				consumers.forEach(consumer -> consumer.printFrameOutput(warningFrame.getFrameOutput(), Level.WARNING));
-				warningFrame.nextFrame();
-			}
-		};
+			consumers.forEach(consumer -> consumer.printFrameOutput(warningFrame.getFrameOutput(), Level.WARNING));
+			warningFrame.nextFrame();
+		}, frameLength, frameLength);
 	}
 
 	/**
@@ -169,7 +167,7 @@ public class RuntimeErrorManager implements Closeable {
 
 	@Override
 	public void close() {
-		task.close();
+		task.cancel();
 	}
 
 }
