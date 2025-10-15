@@ -2,8 +2,9 @@ package org.skriptlang.skript.log.runtime;
 
 import ch.njol.skript.Skript;
 import ch.njol.skript.SkriptConfig;
-import ch.njol.skript.util.Task;
 import ch.njol.skript.util.Timespan;
+import ch.njol.skript.util.region.TaskUtils;
+import ch.njol.skript.util.region.scheduler.task.Task;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.skriptlang.skript.log.runtime.Frame.FrameLimit;
@@ -195,7 +196,7 @@ public class RuntimeErrorManager implements Closeable {
 
 	@Override
 	public void close() {
-		task.close();
+		task.cancel();
 	}
 
 }
