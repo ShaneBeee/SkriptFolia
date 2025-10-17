@@ -216,23 +216,26 @@ public abstract class Task implements Runnable, Closeable {
 			}
 		}
 
-		TaskUtils.getGlobalScheduler().runTask(() -> {
-			try {
-				c.call();
-			} catch (Exception e) {
-				throw new RuntimeException(e);
+		if (!Skript.testing()) {
+			TaskUtils.getGlobalScheduler().runTask(() -> {
+				try {
+					c.call();
+				} catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+			});
+			return null;
+		}
+		final Future<T> f = Bukkit.getScheduler().callSyncMethod(p, c);
+		try {
+			while (true) {
+				try {
+					return f.get();
+				} catch (final InterruptedException e) {}
 			}
-		});
-//		final Future<T> f = Bukkit.getScheduler().callSyncMethod(p, c);
-//		try {
-//			while (true) {
-//				try {
-//					return f.get();
-//				} catch (final InterruptedException e) {}
-//			}
-//		} catch (final ExecutionException e) {
-//			Skript.exception(e);
-//		} catch (final CancellationException e) {}
+		} catch (final ExecutionException e) {
+			Skript.exception(e);
+		} catch (final CancellationException e) {}
 		return null;
 	}
 
