@@ -2,8 +2,9 @@ package org.skriptlang.skript.log.runtime;
 
 import ch.njol.skript.Skript;
 import ch.njol.skript.SkriptConfig;
-import ch.njol.skript.util.Task;
 import ch.njol.skript.util.Timespan;
+import ch.njol.skript.util.region.TaskUtils;
+import ch.njol.skript.util.region.scheduler.task.Task;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.skriptlang.skript.log.runtime.Frame.FrameLimit;
@@ -86,25 +87,22 @@ public class RuntimeErrorManager implements Closeable {
 	 * @param frameLength The length of a frame in ticks.
 	 */
 	public RuntimeErrorManager(long frameLength) {
-		task = new Task(Skript.getInstance(), frameLength, frameLength, true) {
-			@Override
-			public void run() {
-				for (var entry : filterMap.entrySet()) {
-					RuntimeErrorFilter filter = entry.getKey();
-					if (filter == null)
-						continue;
-					Set<RuntimeErrorConsumer> consumers = entry.getValue();
+		task = TaskUtils.getGlobalScheduler().runTaskLater(() -> {
+			for (var entry : filterMap.entrySet()) {
+				RuntimeErrorFilter filter = entry.getKey();
+				if (filter == null)
+					continue;
+				Set<RuntimeErrorConsumer> consumers = entry.getValue();
 
-					Frame errorFrame = filter.getErrorFrame();
-					consumers.forEach(consumer -> consumer.printFrameOutput(errorFrame.getFrameOutput(), Level.SEVERE));
-					errorFrame.nextFrame();
+				Frame errorFrame = filter.getErrorFrame();
+				consumers.forEach(consumer -> consumer.printFrameOutput(errorFrame.getFrameOutput(), Level.SEVERE));
+				errorFrame.nextFrame();
 
-					Frame warningFrame = filter.getErrorFrame();
-					consumers.forEach(consumer -> consumer.printFrameOutput(warningFrame.getFrameOutput(), Level.WARNING));
-					warningFrame.nextFrame();
-				}
+				Frame warningFrame = filter.getErrorFrame();
+				consumers.forEach(consumer -> consumer.printFrameOutput(warningFrame.getFrameOutput(), Level.WARNING));
+				warningFrame.nextFrame();
 			}
-		};
+		}, frameLength);
 	}
 
 	/**
@@ -195,7 +193,7 @@ public class RuntimeErrorManager implements Closeable {
 
 	@Override
 	public void close() {
-		task.close();
+		task.cancel();
 	}
 
 }

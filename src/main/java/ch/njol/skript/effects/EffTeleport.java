@@ -6,6 +6,7 @@ import ch.njol.skript.doc.*;
 import ch.njol.skript.lang.*;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.sections.EffSecSpawn.SpawnEvent;
+import ch.njol.skript.test.runner.TestMode;
 import ch.njol.skript.timings.SkriptTimings;
 import ch.njol.skript.util.Direction;
 import ch.njol.skript.variables.Variables;
@@ -18,6 +19,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.event.Event;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -65,6 +67,9 @@ public class EffTeleport extends Effect {
 		entities = (Expression<Entity>) exprs[0];
 		location = Direction.combine((Expression<? extends Direction>) exprs[1], (Expression<? extends Location>) exprs[2]);
 		async = CAN_RUN_ASYNC && !parseResult.hasTag("force");
+		if (parseResult.hasTag("force")) {
+			Skript.warning("Folia requires all teleports to be async, thus 'force' will not work.");
+		}
 		if (TELEPORT_FLAGS_SUPPORTED)
 			teleportFlags = (Expression<SkriptTeleportFlag>) exprs[3];
 
@@ -186,14 +191,22 @@ public class EffTeleport extends Effect {
 		}
 
 		if (!TELEPORT_FLAGS_SUPPORTED || skriptTeleportFlags == null) {
-			entity.teleport(location);
+			if (TestMode.ENABLED) {
+				entity.teleport(location);
+			} else {
+				entity.teleportAsync(location);
+			}
 			return;
 		}
 
 		Stream<TeleportFlag> teleportFlags = Arrays.stream(skriptTeleportFlags)
 				.flatMap(teleportFlag -> Stream.of(teleportFlag.getTeleportFlags()))
 				.filter(Objects::nonNull);
-		entity.teleport(location, teleportFlags.toArray(TeleportFlag[]::new));
+		if (TestMode.ENABLED) {
+			entity.teleport(location, teleportFlags.toArray(TeleportFlag[]::new));
+			return;
+		}
+		entity.teleportAsync(location, PlayerTeleportEvent.TeleportCause.PLUGIN, teleportFlags.toArray(TeleportFlag[]::new));
 	}
 
 }

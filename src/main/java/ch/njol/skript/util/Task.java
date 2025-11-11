@@ -5,6 +5,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+import ch.njol.skript.util.region.TaskUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.Nullable;
@@ -213,6 +214,17 @@ public abstract class Task implements Runnable, Closeable {
 			} catch (final Exception e) {
 				Skript.exception(e);
 			}
+		}
+
+		if (!Skript.testing()) {
+			TaskUtils.getGlobalScheduler().runTask(() -> {
+				try {
+					c.call();
+				} catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+			});
+			return null;
 		}
 		final Future<T> f = Bukkit.getScheduler().callSyncMethod(p, c);
 		try {
