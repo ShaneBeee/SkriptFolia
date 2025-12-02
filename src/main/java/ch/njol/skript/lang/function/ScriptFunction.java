@@ -23,7 +23,6 @@ public class ScriptFunction<T> extends Function<T> implements ReturnHandler<T> {
 	private final ThreadLocal<T @Nullable []> returnValues = new ThreadLocal<>();
 	private final ThreadLocal<String @Nullable []> returnKeys = new ThreadLocal<>();
 
-
 	/**
 	 * @deprecated use {@link ScriptFunction#ScriptFunction(Signature, SectionNode)} instead.
 	 */
@@ -107,7 +106,7 @@ public class ScriptFunction<T> extends Function<T> implements ReturnHandler<T> {
 
 	@Override
 	public boolean resetReturnValue() {
-		returnValueSet.set(false);
+		returnValueSet.remove();
 		returnValues.remove();
 		returnKeys.remove();
 		return true;

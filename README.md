@@ -14,4 +14,3 @@ Most addons for Skript will not work, as they explicitly require changes to work
 Some addons that will work:
 - [**SkBee**](https://github.com/ShaneBeee/SkBee) currently DOES support Folia.
 - [**Skript-Reflect-Folia**](https://github.com/ShaneBeee/skript-reflect-folia) is a fork of Skript-Reflect that will work on Folia.
-
