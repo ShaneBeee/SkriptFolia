@@ -1,4 +1,6 @@
 # Skript Folia
+![GitHub all releases](https://img.shields.io/github/downloads/ShaneBeee/SkriptFolia/total)  
+
 This is a fork of Skript which has some basic support for [**Folia**](https://papermc.io/software/folia).  
 
 Please see the [**original Skript repo**](https://github.com/SkriptLang/Skript) for all information regarding Skript.
