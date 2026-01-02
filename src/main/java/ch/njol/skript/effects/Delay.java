@@ -13,9 +13,14 @@ import ch.njol.skript.lang.Trigger;
 import ch.njol.skript.lang.TriggerItem;
 import ch.njol.skript.timings.SkriptTimings;
 import ch.njol.skript.util.Timespan;
+import ch.njol.skript.util.region.TaskUtils;
+import ch.njol.skript.util.region.scheduler.Scheduler;
 import ch.njol.skript.variables.Variables;
 import ch.njol.util.Kleenean;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.block.Block;
+import org.bukkit.entity.Entity;
 import org.bukkit.event.Event;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,11 +37,12 @@ import java.util.WeakHashMap;
 public class Delay extends Effect {
 
 	static {
-		Skript.registerEffect(Delay.class, "(wait|halt) [for] %timespan%");
+		Skript.registerEffect(Delay.class, "(wait|halt) [for] %timespan% [for %-entity/location/block%]");
 	}
 
 	@SuppressWarnings("NotNullFieldNotInitialized")
 	protected Expression<Timespan> duration;
+	private Expression<Object> object;
 
 	@SuppressWarnings({"unchecked", "null"})
 	@Override
@@ -55,6 +61,7 @@ public class Delay extends Effect {
 				Skript.warning("Delays less than one tick are not possible, defaulting to one tick.");
 			}
 		}
+		this.object = (Expression<Object>) exprs[1];
 
 		return true;
 	}
@@ -70,12 +77,28 @@ public class Delay extends Effect {
 			Timespan duration = this.duration.getSingle(event);
 			if (duration == null)
 				return null;
-			
+
+			Scheduler<?> scheduler;
+			Object object = null;
+			if (this.object != null) {
+				object = this.object.getOptionalSingle(event).orElse(null);
+			}
+
+			if (object instanceof Entity entity) {
+				scheduler = TaskUtils.getEntityScheduler(entity);
+			} else if (object instanceof Location location) {
+				scheduler = TaskUtils.getRegionalScheduler(location);
+			} else if (object instanceof Block block) {
+				scheduler = TaskUtils.getRegionalScheduler(block.getLocation());
+			} else {
+				scheduler = TaskUtils.getGlobalScheduler();
+			}
+
 			// Back up local variables
 			Object localVars = Variables.removeLocals(event);
-			
-			Bukkit.getScheduler().scheduleSyncDelayedTask(Skript.getInstance(), () -> {
-				addDelayedEvent(event);
+
+			scheduler.runTaskLater(() -> {
+        addDelayedEvent(event);
 				Skript.debug(getIndentation() + "... continuing after " + (System.nanoTime() - start) / 1_000_000_000. + "s");
 
 				// Re-set local variables

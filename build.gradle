@@ -345,6 +345,40 @@ tasks.register('githubRelease', ShadowJar) {
 	}
 }
 
+// Build flavor configurations
+task foliaResources(type: ProcessResources) {
+	from 'src/main/resources', {
+		include '**'
+		version = project.property('version')
+		def channel = 'stable'
+		if (version.contains('-'))
+			channel = 'prerelease'
+		filter ReplaceTokens, tokens: [
+			'version'         : version + '-folia-' + folia_build,
+			'today'           : '' + LocalTime.now(),
+			'release-flavor'  : 'skriptfolia-github', // SkriptFolia build, distributed on Github
+			'release-channel' : channel, // Release channel, see above
+			'release-updater' : 'ch.njol.skript.update.GithubChecker', // Github API client
+			'release-source'  : 'https://api.github.com/repos/ShaneBeee/SkriptFolia/releases', // Github API URL
+			'release-download': 'null' // Update checker will figure it out
+		]
+	}
+	into 'build/resources/main'
+}
+
+task foliaRelease(type: ShadowJar) {
+	from sourceSets.main.output
+	dependsOn foliaResources
+	archiveFileName = 'Skript-' + version + '-folia-' + folia_build + '.jar'
+	manifest {
+		attributes(
+			'Name': 'ch/njol/skript',
+			'Automatic-Module-Name': 'ch.njol.skript',
+			'Sealed': 'true'
+		)
+	}
+}
+
 tasks.register('spigotResources', ProcessResources) {
 	from 'src/main/resources', {
 		include '**'

@@ -1,5 +1,6 @@
 package ch.njol.skript.effects;
 
+import ch.njol.skript.util.region.TaskUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.Event;
@@ -62,7 +63,7 @@ public class EffIgnite extends Effect {
 		}
 		for (Entity entity : entities.getArray(event)) {
 			if (event instanceof EntityDamageEvent && ((EntityDamageEvent) event).getEntity() == entity && !Delay.isDelayed(event)) {
-				Bukkit.getScheduler().scheduleSyncDelayedTask(Skript.getInstance(), new Runnable() {
+				TaskUtils.getEntityScheduler(entity).runTask(new Runnable() {
 					@Override
 					public void run() {
 						entity.setFireTicks(duration);

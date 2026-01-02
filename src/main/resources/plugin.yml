@@ -30,6 +30,7 @@ main: ch.njol.skript.Skript
 
 version: @version@
 api-version: 1.19
+folia-supported: true
 
 commands:
     skript:

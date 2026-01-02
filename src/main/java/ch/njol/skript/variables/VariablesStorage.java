@@ -9,6 +9,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import ch.njol.skript.util.region.TaskUtils;
 import org.jetbrains.annotations.Nullable;
 
 import ch.njol.skript.Skript;
@@ -338,7 +339,7 @@ public abstract class VariablesStorage implements Closeable {
 	 * The backup task, or {@code null} if automatic backups are disabled.
 	 */
 	@Nullable
-	protected Task backupTask = null;
+	protected ch.njol.skript.util.region.scheduler.task.Task<?> backupTask = null;
 
 	/**
 	 * Starts the backup task, with the given backup interval.
@@ -349,9 +350,7 @@ public abstract class VariablesStorage implements Closeable {
 		// File is null or backup interval is invalid
 		if (file == null || backupInterval.getAs(Timespan.TimePeriod.TICK) == 0)
 			return;
-		backupTask = new Task(Skript.getInstance(), backupInterval.getAs(Timespan.TimePeriod.TICK), backupInterval.getAs(Timespan.TimePeriod.TICK), true) {
-			@Override
-			public void run() {
+		backupTask = TaskUtils.getGlobalScheduler().runTaskTimerAsync(() -> {
 				synchronized (connectionLock) {
 					// Disconnect,
 					disconnect();
@@ -372,8 +371,7 @@ public abstract class VariablesStorage implements Closeable {
 						connect();
 					}
 				}
-			}
-		};
+		},backupInterval.getAs((Timespan.TimePeriod.TICK)), backupInterval.getAs(Timespan.TimePeriod.TICK));
 	}
 
 	/**
