@@ -1,7 +1,9 @@
 package ch.njol.skript.effects;
 
+import ch.njol.skript.util.region.TaskUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.jetbrains.annotations.Nullable;
@@ -81,11 +83,21 @@ public class EffCommand extends Effect {
 						Utils.sendPluginMessage(player, EffConnect.BUNGEE_CHANNEL, MESSAGE_CHANNEL, player.getName(), "/" + command);
 						continue;
 					}
-					Skript.dispatchCommand(sender, command);
+					dispatchCommand(sender, command);
 				}
 			} else {
-				Skript.dispatchCommand(Bukkit.getConsoleSender(), command);
+				dispatchCommand(Bukkit.getConsoleSender(), command);
 			}
+		}
+	}
+
+	private void dispatchCommand(CommandSender sender, String command) {
+		if (sender instanceof Entity entity && !Bukkit.isOwnedByCurrentRegion(entity)) {
+			TaskUtils.getEntityScheduler(entity).runTask(() -> Skript.dispatchCommand(sender, command));
+		} else if (Bukkit.isGlobalTickThread() || (sender instanceof Entity entity && Bukkit.isOwnedByCurrentRegion(entity))) {
+			Skript.dispatchCommand(sender, command);
+		} else {
+			TaskUtils.getGlobalScheduler().runTask(() -> Skript.dispatchCommand(sender, command));
 		}
 	}
 
