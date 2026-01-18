@@ -345,8 +345,7 @@ tasks.register('githubRelease', ShadowJar) {
 	}
 }
 
-// Build flavor configurations
-task foliaResources(type: ProcessResources) {
+tasks.register('foliaResources', ShadowJar) {
 	from 'src/main/resources', {
 		include '**'
 		version = project.property('version')
@@ -366,7 +365,7 @@ task foliaResources(type: ProcessResources) {
 	into 'build/resources/main'
 }
 
-task foliaRelease(type: ShadowJar) {
+tasks.register('foliaRelease', ShadowJar) {
 	from sourceSets.main.output
 	dependsOn foliaResources
 	archiveFileName = 'Skript-' + version + '-folia-' + folia_build + '.jar'
