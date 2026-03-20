@@ -345,7 +345,7 @@ tasks.register('githubRelease', ShadowJar) {
 	}
 }
 
-tasks.register('foliaResources', ShadowJar) {
+tasks.register('foliaResources', ProcessResources) {
 	from 'src/main/resources', {
 		include '**'
 		version = project.property('version')
