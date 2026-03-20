@@ -5,6 +5,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+import ch.njol.skript.util.region.TaskUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.Nullable;
@@ -24,7 +25,7 @@ public abstract class Task implements Runnable, Closeable {
 	
 	private boolean useScriptLoaderExecutor;
 	private long period = -1;
-	private int taskID = -1;
+	private ch.njol.skript.util.region.scheduler.task.Task task;
 
 	/**
 	 * Creates a new task that will run after the given delay and then repeat every period ticks.
@@ -108,50 +109,40 @@ public abstract class Task implements Runnable, Closeable {
 	 * @param delay
 	 */
 	private void schedule(final long delay) {
-		assert !isAlive();
 		if (!Skript.getInstance().isEnabled())
 			return;
 		if (useScriptLoaderExecutor) {
 			Executor executor = ScriptLoader.getExecutor();
 			if (delay > 0) {
-				taskID = Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> executor.execute(this), delay);
+				task = TaskUtils.getGlobalScheduler().runTaskLater(() -> executor.execute(this), delay);
 			} else {
 				executor.execute(this);
 			}
 		} else {
 			if (period == -1) {
 				if (async) {
-					taskID = Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, this, delay).getTaskId();
+					task = TaskUtils.getGlobalScheduler().runTaskLaterAsync(this, delay);
 				} else {
-					taskID = Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, this, delay);
+					task = TaskUtils.getGlobalScheduler().runTaskLater(this, delay);
 				}
 			} else {
 				if (async) {
-					taskID = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this, delay, period).getTaskId();
+					task = TaskUtils.getGlobalScheduler().runTaskTimerAsync(this, delay, period);
 				} else {
-					taskID = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, this, delay, period);
+					task = TaskUtils.getGlobalScheduler().runTaskTimer(this, delay, period);
 				}
 			}
-			assert taskID != -1;
+			assert task != null;
 		}
-	}
-
-	/**
-	 * @return Whether this task is still running, i.e. whether it will run later or is currently running.
-	 */
-	public final boolean isAlive() {
-		if (taskID == -1)
-			return false;
-		return Bukkit.getScheduler().isQueued(taskID) || Bukkit.getScheduler().isCurrentlyRunning(taskID);
 	}
 
 	/**
 	 * Cancels this task.
 	 */
 	public final void cancel() {
-		if (taskID != -1) {
-			Bukkit.getScheduler().cancelTask(taskID);
-			taskID = -1;
+		if (task != null) {
+			task.cancel();
+			task = null;
 		}
 	}
 
@@ -181,7 +172,7 @@ public abstract class Task implements Runnable, Closeable {
 		if (period == this.period)
 			return;
 		this.period = period;
-		if (isAlive()) {
+		if (task != null) {
 			cancel();
 			if (period != -1)
 				schedule(period);
@@ -213,6 +204,17 @@ public abstract class Task implements Runnable, Closeable {
 			} catch (final Exception e) {
 				Skript.exception(e);
 			}
+		}
+
+		if (!Skript.testing()) {
+			TaskUtils.getGlobalScheduler().runTask(() -> {
+				try {
+					c.call();
+				} catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+			});
+			return null;
 		}
 		final Future<T> f = Bukkit.getScheduler().callSyncMethod(p, c);
 		try {

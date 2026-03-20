@@ -17,6 +17,7 @@ import ch.njol.skript.doc.Name;
 import ch.njol.skript.doc.Since;
 import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.ParseContext;
+import ch.njol.skript.util.region.TaskUtils;
 import org.skriptlang.skript.lang.script.Script;
 import ch.njol.skript.lang.SkriptParser;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
@@ -325,7 +326,7 @@ public class StructCommand extends Structure {
 			if (DELAY_COMMAND_SYNCING) {
 				// if the plugin is disabled, the server is likely closing and delaying will cause an error.
 				if (Bukkit.getPluginManager().isPluginEnabled(Skript.getInstance()))
-					Bukkit.getScheduler().runTask(Skript.getInstance(), this::forceCommandSync);
+					TaskUtils.getGlobalScheduler().runTask( this::forceCommandSync);
 			} else {
 				forceCommandSync();
 			}

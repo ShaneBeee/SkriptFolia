@@ -11,6 +11,7 @@ import ch.njol.skript.localization.Message;
 import ch.njol.skript.log.RetainingLogHandler;
 import ch.njol.skript.log.SkriptLogger;
 import ch.njol.skript.util.SkriptColor;
+import ch.njol.skript.util.region.TaskUtils;
 import ch.njol.skript.variables.Variables;
 import com.google.common.base.Preconditions;
 import org.bukkit.Bukkit;
@@ -165,6 +166,12 @@ public abstract class Commands {
 		}
 	};
 
+	static boolean canUseEffectCommand(CommandSender sender, String command) {
+		if (!(Skript.testing() || sender instanceof ConsoleCommandSender || sender.hasPermission("skript.effectcommands") || SkriptConfig.allowOpsToUseEffectCommands.value() && sender.isOp()))
+			return false;
+		return true;
+	}
+
 	static boolean handleEffectCommand(CommandSender sender, String command) {
 		if (!(Skript.testing() || sender instanceof ConsoleCommandSender || sender.hasPermission("skript.effectcommands") || SkriptConfig.allowOpsToUseEffectCommands.value() && sender.isOp()))
 			return false;
@@ -283,24 +290,15 @@ public abstract class Commands {
 				public void onPlayerChat(AsyncPlayerChatEvent event) {
 					if ((!SkriptConfig.enableEffectCommands.value() && !Skript.testing()) || !event.getMessage().startsWith(SkriptConfig.effectCommandToken.value()))
 						return;
-					if (!event.isAsynchronous()) {
-						if (handleEffectCommand(event.getPlayer(), event.getMessage()))
-							event.setCancelled(true);
+					if (!canUseEffectCommand(event.getPlayer(), event.getMessage()))
+						return;
+					if (event.isAsynchronous()) {
+						TaskUtils.getEntityScheduler(event.getPlayer()).runTask(() ->
+							handleEffectCommand(event.getPlayer(), event.getMessage()));
 					} else {
-						Future<Boolean> f = Bukkit.getScheduler().callSyncMethod(Skript.getInstance(), () -> handleEffectCommand(event.getPlayer(), event.getMessage()));
-						try {
-							while (true) {
-								try {
-									if (f.get())
-										event.setCancelled(true);
-									break;
-								} catch (InterruptedException ignored) {
-								}
-							}
-						} catch (ExecutionException e) {
-							Skript.exception(e);
-						}
+						handleEffectCommand(event.getPlayer(), event.getMessage());
 					}
+					event.setCancelled(true);
 				}
 			}, Skript.getInstance());
 

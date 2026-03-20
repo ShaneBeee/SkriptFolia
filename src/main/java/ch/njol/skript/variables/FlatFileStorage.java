@@ -10,6 +10,7 @@ import ch.njol.skript.util.FileUtils;
 import ch.njol.skript.util.Task;
 import ch.njol.skript.util.Utils;
 import ch.njol.skript.util.Version;
+import ch.njol.skript.util.region.TaskUtils;
 import ch.njol.util.NotifyingReference;
 import org.jetbrains.annotations.Nullable;
 
@@ -95,7 +96,7 @@ public class FlatFileStorage extends VariablesStorage {
 	 * @see #SAVE_TASK_PERIOD
 	 */
 	@Nullable
-	private Task saveTask;
+	private ch.njol.skript.util.region.scheduler.task.Task<?> saveTask;
 
 	/**
 	 * Whether there was an error while loading variables.
@@ -253,17 +254,15 @@ public class FlatFileStorage extends VariablesStorage {
 		connect();
 
 		// Start the save task
-		saveTask = new Task(Skript.getInstance(), SAVE_TASK_DELAY, SAVE_TASK_PERIOD, true) {
-			@Override
-			public void run() {
+		saveTask = TaskUtils.getGlobalScheduler().runTaskTimerAsync(() -> {
 				// Due to concurrency, the amount of changes may change between the get and set call
 				//  but that's not a big issue
 				if (changes.get() >= REQUIRED_CHANGES_FOR_RESAVE) {
 					saveVariables(false);
 					changes.set(0);
 				}
-			}
-		};
+
+		}, SAVE_TASK_DELAY, SAVE_TASK_PERIOD);
 
 		return ioException == null;
 	}
