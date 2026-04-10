@@ -9,6 +9,11 @@ import com.google.common.collect.Multimap;
 import org.bukkit.Bukkit;
 import org.bukkit.event.*;
 import org.bukkit.event.Event.Result;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.HandlerList;
+import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.plugin.EventExecutor;
 import org.bukkit.plugin.RegisteredListener;
@@ -170,7 +175,8 @@ public final class SkriptEventHandler {
 			logTriggerEnd(trigger);
 		};
 
-		if (trigger.getEvent().canExecuteAsynchronously()) {
+		// On chat is a special case and won't work without this instance check
+		if (event instanceof AsyncPlayerChatEvent || event instanceof io.papermc.paper.event.player.AsyncChatEvent || trigger.getEvent().canExecuteAsynchronously()) {
 			if (trigger.getEvent().check(event))
 				execute.run();
 		} else { // Ensure main thread
