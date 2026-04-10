@@ -816,10 +816,9 @@ public final class Skript extends JavaPlugin implements Listener {
 					Skript.info(player, SkriptUpdater.m_update_available.toString(update.id, Skript.getVersion()));
 					player.sendMessage(TextComponentParser.instance()
 						.parse("Download it at: <aqua><underlined><click:open_url:" + update.downloadUrl + ">" + update.downloadUrl));
-				}
-			};
+			});
 		}
-  	}
+	}
 
 	private void runTests() {
 		info("Skript testing environment enabled, starting...");
