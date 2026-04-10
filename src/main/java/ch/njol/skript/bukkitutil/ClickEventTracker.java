@@ -1,5 +1,6 @@
 package ch.njol.skript.bukkitutil;
 
+import ch.njol.skript.effects.EffCancelEvent;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -10,11 +11,12 @@ import ch.njol.skript.util.region.TaskUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
+import org.bukkit.event.Event;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import ch.njol.skript.effects.EffCancelEvent;
+import java.util.*;
 
 /**
  * Tracks click events to remove extraneous events for one player click.
@@ -80,12 +82,18 @@ public class ClickEventTracker {
 			}
 			
 			// Ignore this, but set its cancelled status based on one set to first event
-			if (event instanceof PlayerInteractEvent) { // Handle use item/block separately
+			if (event instanceof PlayerInteractEvent current) { // Handle use item/block separately
 				// Failing to do so caused issue SkriptLang/Skript#2303
-				PlayerInteractEvent firstClick = (PlayerInteractEvent) first.event;
-				PlayerInteractEvent click = (PlayerInteractEvent) event;
-				click.setUseInteractedBlock(firstClick.useInteractedBlock());
-				click.setUseItemInHand(firstClick.useItemInHand());
+				Cancellable previous = first.event;
+				if (previous instanceof PlayerInteractEvent prevClick) {
+					current.setUseInteractedBlock(prevClick.useInteractedBlock());
+					current.setUseItemInHand(prevClick.useItemInHand());
+				} else {
+					// in case the prev was PlayerInteractEntityEvent
+					Event.Result newResult = previous.isCancelled() ? Event.Result.DENY : Event.Result.DEFAULT;
+					current.setUseInteractedBlock(newResult);
+					current.setUseItemInHand(newResult);
+				}
 			} else {
 				event.setCancelled(first.event.isCancelled());
 			}

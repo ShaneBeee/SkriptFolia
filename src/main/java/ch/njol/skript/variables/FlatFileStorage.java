@@ -140,8 +140,6 @@ public class FlatFileStorage extends VariablesStorage {
 		Version csvSkriptVersion;
 
 		// Some variables used to allow legacy CSV files to be loaded
-		Version v2_0_beta3 = new Version(2, 0, "beta 3");
-		boolean update2_0_beta3 = false;
 		Version v2_1 = new Version(2, 1);
 		boolean update2_1 = false;
 
@@ -161,7 +159,6 @@ public class FlatFileStorage extends VariablesStorage {
 
 						try {
 							csvSkriptVersion = new Version(line.substring("# version:".length()).trim());
-							update2_0_beta3 = csvSkriptVersion.isSmallerThan(v2_0_beta3);
 							update2_1 = csvSkriptVersion.isSmallerThan(v2_1);
 						} catch (IllegalArgumentException ignored) {
 						}
@@ -202,11 +199,6 @@ public class FlatFileStorage extends VariablesStorage {
 						invalid.append(split[0]);
 						unsuccessfulVariableCount++;
 						continue;
-					}
-
-					// Legacy
-					if (deserializedValue instanceof String && update2_0_beta3) {
-						deserializedValue = Utils.replaceChatStyles((String) deserializedValue);
 					}
 
 					Variables.variableLoaded(split[0], deserializedValue, this);
