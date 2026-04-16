@@ -2,6 +2,7 @@ package ch.njol.skript.bukkitutil;
 
 import ch.njol.skript.Skript;
 import ch.njol.skript.util.Task;
+import ch.njol.skript.util.region.TaskUtils;
 import com.google.common.collect.ImmutableList;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -32,15 +33,12 @@ public abstract class PlayerUtils {
 	}
 
 	static {
-		new Task(Skript.getInstance(), 1, 1) {
-			@Override
-			public void run() {
-				for (Player p : inventoryUpdateList)
-					p.updateInventory();
+		TaskUtils.getGlobalScheduler().runTaskTimer(() -> {
+			for (Player p : inventoryUpdateList)
+				p.updateInventory();
 
-				inventoryUpdateList.clear();
-			}
-		};
+			inventoryUpdateList.clear();
+		}, 1, 1);
 	}
 
 	/**
