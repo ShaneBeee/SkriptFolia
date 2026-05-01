@@ -2,6 +2,7 @@ package ch.njol.skript.util;
 
 import ch.njol.skript.Skript;
 import ch.njol.skript.bukkitutil.block.BlockCompat;
+import ch.njol.skript.util.region.TaskUtils;
 import com.destroystokyo.paper.block.BlockSoundGroup;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -155,7 +156,7 @@ public class DelayedChangeBlock implements Block {
 		if (newState != null) {
 			newState.setType(type);
 		} else {
-			Bukkit.getScheduler().scheduleSyncDelayedTask(Skript.getInstance(), new Runnable() {
+			TaskUtils.getRegionalScheduler(this.block.getLocation()).runTask( new Runnable() {
 				@Override
 				public void run() {
 					block.setType(type);
@@ -284,7 +285,7 @@ public class DelayedChangeBlock implements Block {
 		if (newState != null) {
 			return false;
 		} else {
-			Bukkit.getScheduler().scheduleSyncDelayedTask(Skript.getInstance(), new Runnable() {
+			TaskUtils.getRegionalScheduler(this.block.getLocation()).runTask( new Runnable() {
 				@Override
 				public void run() {
 					block.breakNaturally();
@@ -299,7 +300,7 @@ public class DelayedChangeBlock implements Block {
 		if (newState != null) {
 			return false;
 		} else {
-			Bukkit.getScheduler().scheduleSyncDelayedTask(Skript.getInstance(), new Runnable() {
+			TaskUtils.getRegionalScheduler(this.block.getLocation()).runTask( new Runnable() {
 				@Override
 				public void run() {
 					block.breakNaturally(tool);
@@ -314,7 +315,7 @@ public class DelayedChangeBlock implements Block {
 		if (newState != null) {
 			return false;
 		} else {
-			Bukkit.getScheduler().scheduleSyncDelayedTask(Skript.getInstance(), new Runnable() {
+			TaskUtils.getRegionalScheduler(this.block.getLocation()).runTask(new Runnable() {
 				@Override
 				public void run() {
 					block.breakNaturally(triggerEffect);
@@ -329,7 +330,7 @@ public class DelayedChangeBlock implements Block {
 		if (newState != null) {
 			return false;
 		} else {
-			Bukkit.getScheduler().scheduleSyncDelayedTask(Skript.getInstance(), new Runnable() {
+			TaskUtils.getRegionalScheduler(this.block.getLocation()).runTask( new Runnable() {
 				@Override
 				public void run() {
 					block.breakNaturally(tool, triggerEffect);
@@ -408,7 +409,7 @@ public class DelayedChangeBlock implements Block {
 		if (newState != null) {
 			newState.setType(type);
 		} else {
-			Bukkit.getScheduler().scheduleSyncDelayedTask(Skript.getInstance(), new Runnable() {
+			TaskUtils.getRegionalScheduler(this.block.getLocation()).runTask(new Runnable() {
 				@Override
 				public void run() {
 					block.setType(type, applyPhysics);
@@ -432,7 +433,7 @@ public class DelayedChangeBlock implements Block {
 		if (newState != null) {
 			newState.setBlockData(data);
 		} else {
-			Bukkit.getScheduler().scheduleSyncDelayedTask(Skript.getInstance(), () -> block.setBlockData(data, applyPhysics));
+			TaskUtils.getRegionalScheduler(this.block.getLocation()).runTask(() -> block.setBlockData(data, applyPhysics));
 		}
 	}
 
