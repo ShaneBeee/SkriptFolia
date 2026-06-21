@@ -1,6 +1,7 @@
 package ch.njol.skript.effects;
 
 import ch.njol.skript.Skript;
+import ch.njol.skript.command.CommandEvent;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Example;
 import ch.njol.skript.doc.Name;
@@ -17,14 +18,19 @@ import ch.njol.skript.util.region.TaskUtils;
 import ch.njol.skript.util.region.scheduler.Scheduler;
 import ch.njol.skript.variables.Variables;
 import ch.njol.util.Kleenean;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
+import org.bukkit.command.BlockCommandSender;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.Event;
+import org.bukkit.event.block.BlockEvent;
+import org.bukkit.event.entity.EntityEvent;
+import org.bukkit.event.player.PlayerEvent;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
+import java.util.Optional;
 import java.util.Set;
 import java.util.WeakHashMap;
 
@@ -78,24 +84,14 @@ public class Delay extends Effect {
 			if (duration == null)
 				return null;
 
-			Scheduler<?> scheduler;
 			Object object = null;
 			if (this.object != null) {
 				object = this.object.getOptionalSingle(event).orElse(null);
 			}
 
-			if (object instanceof Entity entity) {
-				scheduler = TaskUtils.getEntityScheduler(entity);
-			} else if (object instanceof Location location) {
-				scheduler = TaskUtils.getRegionalScheduler(location);
-			} else if (object instanceof Block block) {
-				scheduler = TaskUtils.getRegionalScheduler(block.getLocation());
-			} else {
-				scheduler = TaskUtils.getGlobalScheduler();
-			}
-
 			// Back up local variables
 			Object localVars = Variables.removeLocals(event);
+			Scheduler<?> scheduler = getScheduler(event, object, localVars);
 
 			scheduler.runTaskLater(() -> {
         addDelayedEvent(event);
@@ -129,6 +125,44 @@ public class Delay extends Effect {
 	@Override
 	public String toString(@Nullable Event event, boolean debug) {
 		return "wait for " + duration.toString(event, debug) + (event == null ? "" : "...");
+	}
+
+	private static Scheduler<?> getScheduler(Event event, @Nullable Object object, @Nullable Object localVars) {
+		if (object != null)
+			return TaskUtils.getScheduler(object);
+
+		if (TaskUtils.isFoliaSchedulersEnabled()) {
+			Optional<Object> localOwner = Variables.findLocalExecutionOwner(localVars);
+			if (localOwner.isPresent())
+				return TaskUtils.getScheduler(localOwner.get());
+
+			Optional<Object> eventOwner = getEventExecutionOwner(event);
+			if (eventOwner.isPresent())
+				return TaskUtils.getScheduler(eventOwner.get());
+		}
+
+		return TaskUtils.getGlobalScheduler();
+	}
+
+	private static Optional<Object> getEventExecutionOwner(Event event) {
+		if (event instanceof CommandEvent commandEvent) {
+			CommandSender sender = commandEvent.getSender();
+			if (sender instanceof Entity entity)
+				return Optional.of(entity);
+			if (sender instanceof BlockCommandSender blockCommandSender)
+				return Optional.of(blockCommandSender.getBlock());
+		}
+
+		if (event instanceof PlayerEvent playerEvent)
+			return Optional.of(playerEvent.getPlayer());
+
+		if (event instanceof EntityEvent entityEvent)
+			return Optional.of(entityEvent.getEntity());
+
+		if (event instanceof BlockEvent blockEvent)
+			return Optional.of(blockEvent.getBlock());
+
+		return Optional.empty();
 	}
 
 	private static final Set<Event> DELAYED =

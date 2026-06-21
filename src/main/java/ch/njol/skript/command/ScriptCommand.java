@@ -22,6 +22,7 @@ import ch.njol.skript.log.Verbosity;
 import ch.njol.skript.util.Date;
 import ch.njol.skript.util.EmptyStacktraceException;
 import ch.njol.skript.util.Timespan;
+import ch.njol.skript.util.region.TaskUtils;
 import ch.njol.skript.variables.HintManager;
 import ch.njol.skript.variables.Variables;
 import ch.njol.util.StringUtils;
@@ -30,11 +31,13 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.command.BlockCommandSender;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.command.TabExecutor;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.help.GenericCommandHelpTopic;
@@ -319,7 +322,15 @@ public class ScriptCommand implements TabExecutor {
 					setLastUsage(((Player) sender).getUniqueId(), event, new Date());
 			}
 		};
-		if (Bukkit.isPrimaryThread()) {
+		if (TaskUtils.isFoliaSchedulersEnabled()) {
+			if (sender instanceof Entity entity) {
+				TaskUtils.getEntityScheduler(entity).runTask(runnable);
+			} else if (sender instanceof BlockCommandSender blockCommandSender) {
+				TaskUtils.getRegionalScheduler(blockCommandSender.getBlock().getLocation()).runTask(runnable);
+			} else {
+				TaskUtils.getGlobalScheduler().runTask(runnable);
+			}
+		} else if (Bukkit.isPrimaryThread()) {
 			runnable.run();
 		} else {
 			// must not wait for the command to complete as some plugins call commands in such a way that the server will deadlock
