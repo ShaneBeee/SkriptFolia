@@ -81,8 +81,27 @@ task jar(overwrite: true, type: ShadowJar) {
 }
 
 task build(overwrite: true, type: ShadowJar) {
+	dependsOn checkAliases
 	archiveFileName = jarName ? 'Skript-' + project.version + '.jar' : jarName
 	from sourceSets.main.output
+}
+
+tasks.register('verifyBuiltJarAliases') {
+	description 'Verifies that the built Skript jar contains bundled default aliases.'
+	dependsOn build
+	doLast {
+		def jarFile = tasks.named('build', ShadowJar).get().archiveFile.get().asFile
+		if (!jarFile.exists()) {
+			throw new InvalidUserDataException("Built jar does not exist: ${jarFile}")
+		}
+		def aliases = zipTree(jarFile).matching {
+			include 'aliases-english/**/*.sk'
+		}.files
+		if (aliases.isEmpty()) {
+			throw new InvalidUserDataException("Built jar is missing aliases-english/**/*.sk. Fetch/populate skript-aliases before publishing this jar.")
+		}
+		println "Verified ${aliases.size()} bundled alias files in ${jarFile.name}"
+	}
 }
 
 // Excludes the tests for the build task. Should be using JUnitQuick, JUnitJava21, skriptTest, quickTest.

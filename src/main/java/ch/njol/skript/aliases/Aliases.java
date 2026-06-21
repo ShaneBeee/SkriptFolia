@@ -489,7 +489,13 @@ public abstract class Aliases {
 					assert zipFs != null;
 					Path aliasesPath = zipFs.getPath("/", "aliases-english");
 					assert aliasesPath != null;
-					loadDirectory(aliasesPath);
+					if (Files.exists(aliasesPath)) {
+						loadDirectory(aliasesPath);
+					} else {
+						Skript.warning("The Skript jar is missing bundled default aliases at /aliases-english.");
+						Skript.warning("This jar was built incorrectly. Rebuild it with a populated skript-aliases folder.");
+						Skript.warning("Skript will continue with generated material aliases only; some custom aliases may be unavailable.");
+					}
 				}
 			} catch (URISyntaxException e) {
 				assert false;

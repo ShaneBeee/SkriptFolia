@@ -1,0 +1,23 @@
+test "player's tool is a netherite sword (slot vs itemtype)":
+	parse:
+		if player's tool is a netherite sword:
+			stop
+	assert last parse logs does not contain "Can't compare a slot" with "player's tool must remain comparable with item types"
+
+test "player's tool is a netherite spear (slot vs itemtype)":
+	parse:
+		if player's tool is a netherite spear:
+			stop
+	assert last parse logs does not contain "Can't compare a slot" with "player's tool must remain comparable with item types (spear)"
+
+test "event-item is red concrete (itemstack vs blockdata)":
+	parse:
+		on inventory click:
+			if event-item is red concrete:
+				stop
+	assert last parse logs does not contain "Can't compare an item stack with a block data" with "event-item must compare to item aliases like red concrete"
+
+test "play 60 of heart at player's location":
+	parse:
+		play 60 of heart at player's location
+	assert last parse logs does not contain "Can't understand this condition/effect" with "play <count> of <particle> at <location> must parse"
