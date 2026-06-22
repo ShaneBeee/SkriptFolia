@@ -85,7 +85,8 @@ public class FoliaScheduler implements Scheduler<ScheduledTask> {
 
     @Override
     public FoliaTask runTaskTimer(Runnable task, long delay, long period) {
-        if (delay <= 0) delay = 1;
+        delay = sanitizeDelay(delay);
+        period = sanitizePeriod(period);
         ScheduledTask scheduledTask;
         if (this.entity != null) {
             scheduledTask = this.entity.getScheduler().runAtFixedRate(TaskUtils.getPlugin(), t -> task.run(), null, delay, period);
@@ -99,10 +100,19 @@ public class FoliaScheduler implements Scheduler<ScheduledTask> {
 
     @Override
     public Task<ScheduledTask> runTaskTimerAsync(Runnable task, long delay, long period) {
-        if (delay <= 0) delay = 1;
+        delay = sanitizeDelay(delay);
+        period = sanitizePeriod(period);
         ScheduledTask scheduledTask = ASYNC_SCHEDULER.runAtFixedRate(TaskUtils.getPlugin(), t -> task.run(),
             delay * 50, period * 50, TimeUnit.MILLISECONDS);
         return new FoliaTask(scheduledTask);
+    }
+
+    private static long sanitizeDelay(long delay) {
+        return Math.max(delay, 1L);
+    }
+
+    private static long sanitizePeriod(long period) {
+        return Math.max(period, 1L);
     }
 
 }

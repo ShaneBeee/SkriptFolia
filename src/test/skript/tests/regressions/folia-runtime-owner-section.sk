@@ -1,0 +1,19 @@
+test "folia-safe run task later for location parses":
+	parse:
+		set {_loc} to location(0, 64, 0, world("world"))
+		run task 1 tick later for {_loc}:
+			set {_ok} to true
+	assert last parse logs does not contain "Can't understand this section" with "run task later for location must parse"
+
+test "folia-safe run task later for player parses":
+	parse:
+		run task 1 tick later for player:
+			set {_ok} to true
+	assert last parse logs does not contain "Can't understand this section" with "run task later for player must parse"
+
+test "folia-safe run task later for block parses":
+	parse:
+		set {_b} to block at location(0, 64, 0, world("world"))
+		run task 1 tick later for {_b}:
+			set {_ok} to true
+	assert last parse logs does not contain "Can't understand this section" with "run task later for block must parse"

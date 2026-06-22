@@ -89,6 +89,7 @@ public class ScriptFunction<T> extends Function<T> implements ReturnHandler<T> {
 	public T execute(@NotNull FunctionEvent<?> event, @NotNull FunctionArguments arguments) {
 		Parameters parameters = getSignature().parameters();
 		FunctionEvent<?> newEvent = new FunctionEvent<>(this);
+		event.getExecutionOwner().ifPresent(newEvent::setExecutionOwner);
 
 		for (String name : arguments.names()) {
 			Parameter<?> parameter = parameters.get(name);
@@ -112,6 +113,10 @@ public class ScriptFunction<T> extends Function<T> implements ReturnHandler<T> {
 						i++;
 					}
 				}
+			}
+
+			if (!newEvent.getExecutionOwner().isPresent()) {
+				Variables.findExecutionOwner(value).ifPresent(newEvent::setExecutionOwner);
 			}
 		}
 

@@ -5,9 +5,11 @@ import ch.njol.skript.util.region.scheduler.Scheduler;
 import ch.njol.skript.util.region.scheduler.SpigotScheduler;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Utility class for creating {@link Scheduler Schedulers}
@@ -42,6 +44,35 @@ public class TaskUtils {
     public static Plugin getPlugin() {
         pluginCheck();
         return plugin;
+    }
+
+    /**
+     * Check if Paper/Folia regionalized schedulers are enabled.
+     *
+     * @return Whether this runtime uses Paper/Folia regionalized schedulers
+     */
+    public static boolean isFoliaSchedulersEnabled() {
+        pluginCheck();
+        return useFoliaSchedulers;
+    }
+
+    /**
+     * Get the scheduler that owns the given object.
+     * <p>For Folia, the returned scheduler runs tasks on the region or entity that
+     * owns the object. Unknown objects fall back to the global scheduler.</p>
+     *
+     * @param object Object to infer scheduler ownership from
+     * @return Scheduler for the object owner, or global scheduler for unknown owners
+     */
+    public static Scheduler<?> getScheduler(@Nullable Object object) {
+        pluginCheck();
+        if (object instanceof Entity entity)
+            return getEntityScheduler(entity);
+        if (object instanceof Block block)
+            return getRegionalScheduler(block.getLocation());
+        if (object instanceof Location location)
+            return getRegionalScheduler(location);
+        return getGlobalScheduler();
     }
 
     /**

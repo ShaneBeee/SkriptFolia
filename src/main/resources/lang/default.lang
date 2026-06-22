@@ -2378,7 +2378,7 @@ entity effect:
 	# non-functional
 	guardian_target: guardian target sound effect (non-functional)
 	thorns_hurt: thorns hurt effect (non-functional)
-	hurt: damage animation (non-functional)
+	hurt: damage animation (non-functional), hurt animation
 	hurt_explosion: explosion damage effect (non-functional)
 	hurt_berry_bush: hurt berry bush effect (non-functional)
 	cat_tame_fail: cat tame fail effect (non-functional)

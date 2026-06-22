@@ -1,0 +1,11 @@
+test "sub-tick periodical event is rejected":
+	parse:
+		every 0.01 second:
+			stop
+	assert last parse logs contains "less than one tick" with "sub-tick periodical must fail to parse"
+
+test "every tick still parses":
+	parse:
+		every tick:
+			stop
+	assert last parse logs does not contain "less than one tick" with "every tick must still parse"

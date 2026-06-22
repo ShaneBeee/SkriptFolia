@@ -14,6 +14,7 @@ import org.skriptlang.skript.common.function.FunctionArguments;
 import org.skriptlang.skript.common.function.Parameter.Modifier;
 import org.skriptlang.skript.common.function.Parameters;
 import org.skriptlang.skript.common.function.ScriptParameter;
+import ch.njol.skript.variables.Variables;
 
 import java.util.Arrays;
 
@@ -146,6 +147,8 @@ public abstract class Function<T> implements org.skriptlang.skript.common.functi
 			parameterValues[i] = parameterValue;
 			i++;
 		}
+
+		Variables.findExecutionOwner(parameterValues).ifPresent(event::setExecutionOwner);
 
 		// Execute function contents
 		T[] r = execute(event, parameterValues);

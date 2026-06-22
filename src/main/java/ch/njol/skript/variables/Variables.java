@@ -22,8 +22,11 @@ import ch.njol.yggdrasil.Yggdrasil;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.block.Block;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
+import org.bukkit.entity.Entity;
 import org.bukkit.event.Event;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -424,6 +427,87 @@ public class Variables {
 			return null;
 
 		return from.copy();
+	}
+
+	/**
+	 * Finds a Folia execution owner from a backed-up local variables map.
+	 * <p>This is intentionally limited to Bukkit ownership primitives. Delayed
+	 * continuation uses it to avoid resuming location/entity work on the global region.</p>
+	 *
+	 * @param map the local variables map returned by {@link #removeLocals(Event)} or {@link #copyLocalVariables(Event)}
+	 * @return an entity, block, or location owner if one is present
+	 */
+	public static Optional<Object> findLocalExecutionOwner(@Nullable Object map) {
+		return findExecutionOwner(map);
+	}
+
+	/**
+	 * Finds a Folia execution owner from any value.
+	 * <p>Scans arrays, iterables, maps and nested map entries recursively, preferring
+	 * {@link Entity} owners over {@link Block} over {@link Location}. Used by function
+	 * argument propagation and delayed continuation to recover the scheduler owner when
+	 * no explicit owner is supplied.</p>
+	 *
+	 * @param value value to scan; may be scalar, array, iterable, map, or nested combination
+	 * @return the first matching owner in priority order, or {@link Optional#empty()}
+	 */
+	public static Optional<Object> findExecutionOwner(@Nullable Object value) {
+		Optional<Object> owner = findExecutionOwner(value, Entity.class);
+		if (owner.isPresent())
+			return owner;
+		owner = findExecutionOwner(value, Block.class);
+		if (owner.isPresent())
+			return owner;
+		return findExecutionOwner(value, Location.class);
+	}
+
+	private static Optional<Object> findExecutionOwner(@Nullable Object map, Class<?> ownerType) {
+		if (!(map instanceof VariablesMap variablesMap)) {
+			Optional<Object> direct = findExecutionOwnerValue(map, ownerType);
+			if (direct.isPresent())
+				return direct;
+			return Optional.empty();
+		}
+
+		List<Entry<String, Object>> hashEntries = new ArrayList<>(variablesMap.hashMap.entrySet());
+		hashEntries.sort(Entry.comparingByKey(VariablesMap.VARIABLE_NAME_COMPARATOR));
+
+		Optional<Object> owner = findExecutionOwnerValue(hashEntries, ownerType);
+		if (owner.isPresent())
+			return owner;
+
+		return findExecutionOwnerValue(variablesMap.treeMap.entrySet(), ownerType);
+	}
+
+	private static Optional<Object> findExecutionOwnerValue(@Nullable Object value, Class<?> ownerType) {
+		if (ownerType.isInstance(value))
+			return Optional.of(value);
+
+		if (value instanceof Object[] array) {
+			for (Object element : array) {
+				Optional<Object> owner = findExecutionOwnerValue(element, ownerType);
+				if (owner.isPresent())
+					return owner;
+			}
+			return Optional.empty();
+		}
+
+		if (value instanceof Iterable<?> iterable) {
+			for (Object element : iterable) {
+				Optional<Object> owner = findExecutionOwnerValue(element, ownerType);
+				if (owner.isPresent())
+					return owner;
+			}
+			return Optional.empty();
+		}
+
+		if (value instanceof Map<?, ?> nestedMap) {
+			List<Entry<?, ?>> entries = new ArrayList<>(nestedMap.entrySet());
+			entries.sort((first, second) -> String.valueOf(first.getKey()).compareTo(String.valueOf(second.getKey())));
+			return findExecutionOwnerValue(entries, ownerType);
+		}
+
+		return Optional.empty();
 	}
 
 	/**

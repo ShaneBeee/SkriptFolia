@@ -159,6 +159,22 @@ public class DataParticles {
 			}, //</editor-fold>
 			(exprs, parseResult, builder) -> builder.append(exprs[0], "dust particle of size", exprs[1], "that transitions to", exprs[2]));
 
+		// dust using dustOption() compatibility
+		registerParticle(Particle.DUST, "dust [particle[s]] (using|with) %dustoption%",
+			(event, expressions, parseResult) -> {
+				Particle.DustOptions options = (Particle.DustOptions) expressions[0].getSingle(event);
+				return options == null ? new Particle.DustOptions(org.bukkit.Color.WHITE, 1.0F) : options;
+			},
+			(exprs, parseResult, builder) -> builder.append("dust particle using", exprs[0]));
+
+		// dust transition using dustTransition() compatibility
+		registerParticle(Particle.DUST_COLOR_TRANSITION, "dust [transition] [particle[s]] (using|with) %dusttransition%",
+			(event, expressions, parseResult) -> {
+				Particle.DustTransition transition = (Particle.DustTransition) expressions[0].getSingle(event);
+				return transition == null ? new Particle.DustTransition(org.bukkit.Color.WHITE, org.bukkit.Color.WHITE, 1.0F) : transition;
+			},
+			(exprs, parseResult, builder) -> builder.append("dust transition particle using", exprs[0]));
+
 		// blockdata
 		registerParticle(Particle.BLOCK, "%itemtype/blockdata% block particle[s]",
 			DataSupplier::getBlockData,

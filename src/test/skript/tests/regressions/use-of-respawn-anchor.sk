@@ -1,0 +1,6 @@
+parse:
+	results: {use-of-respawn-anchor::parse::*}
+	code:
+		force draw 1 cloud at player
+test "use of respawn anchor parses":
+	assert {use-of-respawn-anchor::parse::*} is not set with "force at start should work"

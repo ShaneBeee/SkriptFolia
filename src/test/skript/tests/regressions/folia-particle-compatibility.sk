@@ -1,0 +1,15 @@
+parse:
+	results: {folia-particle-compatibility::parse::*}
+	code:
+		command /particlecompat:
+			trigger:
+				play 60 of heart at player's location
+				play 15 cloud at player's location
+				draw 1 dust particle using dustOption(white, 2) at location of player
+				draw 1 of dust using dustTransition(green, light green, 10) at location of player
+				draw 1 of cloud at location of player with extra 0
+				draw 1 of cloud at location of player with extra 0 with force
+				draw 1 of cloud at location of player with offset vector(1, 1, 1) with extra 2
+				play hurt animation on player
+test "legacy particle compatibility parses":
+	assert {folia-particle-compatibility::parse::*} is not set with "legacy particle lines should parse"

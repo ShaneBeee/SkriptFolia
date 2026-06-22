@@ -49,6 +49,10 @@ public class EvtPeriodical extends SkriptEvent {
 	@SuppressWarnings("unchecked")
 	public boolean init(Literal<?>[] args, int matchedPattern, ParseResult parseResult) {
 		period = ((Literal<Timespan>) args[0]).getSingle();
+		if (period.getAs(Timespan.TimePeriod.TICK) < 1) {
+			Skript.error("Periodical events less than one tick are not possible. Use 'every tick:' for the fastest supported period.");
+			return false;
+		}
 		if (args.length > 1 && args[1] != null)
 			worlds = ((Literal<World>) args[1]).getArray();
 		return true;

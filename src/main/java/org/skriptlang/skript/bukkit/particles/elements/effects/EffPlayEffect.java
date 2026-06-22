@@ -12,12 +12,15 @@ import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.lang.SyntaxStringBuilder;
 import ch.njol.skript.registrations.Classes;
 import ch.njol.skript.util.Direction;
+import ch.njol.skript.util.region.RegionUtils;
+import ch.njol.skript.util.region.TaskUtils;
 import ch.njol.util.Kleenean;
 import org.bukkit.EntityEffect;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
+import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.skriptlang.skript.bukkit.particles.GameEffect;
@@ -52,7 +55,11 @@ public class EffPlayEffect extends Effect {
 					"[:force] (play|show|draw) %gameeffects/particles% [%-directions% %locations%] [as %-player%]",
 					"[:force] (play|draw) %gameeffects/particles% [%-directions% %locations%] (for|to) %-players% [as %-player%]", // show is omitted to avoid conflicts with EffOpenInv
 					"(play|show|draw) %gameeffects% [%-directions% %locations%] (in|with) [a] [view] (radius|range) [of] %number%",
-					"(play|show|draw) %entityeffects% on %entities%"
+					"(play|show|draw) %entityeffects% on %entities%",
+					"[:force] (play|show|draw) %number% [of] %particles% [%-directions% %locations%] [as %-player%]",
+					"[:force] (play|draw) %number% [of] %particles% [%-directions% %locations%] (for|to) %-players% [as %-player%]",
+					"[:force] (play|show|draw) %number% [of] %particles% [%-directions% %locations%] with offset %vector% [with extra %-number%] [(force:with force)]",
+					"[:force] (play|show|draw) %number% [of] %particles% [%-directions% %locations%] with extra %number% [(force:with force)]"
 				)
 				.supplier(EffPlayEffect::new)
 				.build());
@@ -63,6 +70,9 @@ public class EffPlayEffect extends Effect {
 	private @Nullable Expression<Player> toPlayers;
 	private @Nullable Expression<Player> asPlayer;
 	private @Nullable Expression<Number> radius;
+	private @Nullable Expression<Number> count;
+	private @Nullable Expression<Vector> compatOffset;
+	private @Nullable Expression<Number> compatExtra;
 	private boolean force;
 
 	// for entity effects
@@ -90,6 +100,32 @@ public class EffPlayEffect extends Effect {
 				this.radius = (Expression<Number>) expressions[3];
 			}
 			case 3 -> this.entities = (Expression<Entity>) expressions[1];
+			case 4 -> {
+				this.count = (Expression<Number>) expressions[0];
+				this.toDraw = expressions[1];
+				this.locations = Direction.combine((Expression<? extends Direction>) expressions[2], (Expression<Location>) expressions[3]);
+				this.asPlayer = (Expression<Player>) expressions[4];
+			}
+			case 5 -> {
+				this.count = (Expression<Number>) expressions[0];
+				this.toDraw = expressions[1];
+				this.locations = Direction.combine((Expression<? extends Direction>) expressions[2], (Expression<Location>) expressions[3]);
+				this.toPlayers = (Expression<Player>) expressions[4];
+				this.asPlayer = (Expression<Player>) expressions[5];
+			}
+			case 6 -> {
+				this.count = (Expression<Number>) expressions[0];
+				this.toDraw = expressions[1];
+				this.locations = Direction.combine((Expression<? extends Direction>) expressions[2], (Expression<Location>) expressions[3]);
+				this.compatOffset = (Expression<Vector>) expressions[4];
+				this.compatExtra = (Expression<Number>) expressions[5];
+			}
+			case 7 -> {
+				this.count = (Expression<Number>) expressions[0];
+				this.toDraw = expressions[1];
+				this.locations = Direction.combine((Expression<? extends Direction>) expressions[2], (Expression<Location>) expressions[3]);
+				this.compatExtra = (Expression<Number>) expressions[4];
+			}
 		}
 		this.node = getParser().getNode();
 		return true;
@@ -112,6 +148,7 @@ public class EffPlayEffect extends Effect {
 		Object[] toDraw = this.toDraw.getArray(event);
 		Player[] players = toPlayers != null ? toPlayers.getArray(event) : null;
 		Player asPlayer = this.asPlayer != null ? this.asPlayer.getSingle(event) : null;
+		Number countValue = this.count != null ? this.count.getSingle(event) : null;
 
 		for (Object draw : toDraw) {
 			// Game effects
@@ -119,25 +156,61 @@ public class EffPlayEffect extends Effect {
 				// in radius
 				if (players == null) {
 					for (Location location : locations)
-						gameEffect.draw(location, radius);
+						runAtLocation(location, () -> gameEffect.draw(location, radius));
 				// for players
 				} else {
 					for (Player player : players) {
 						for (Location location : locations)
-							gameEffect.drawForPlayer(location, player);
+							runAtLocation(location, () -> gameEffect.drawForPlayer(location, player));
 					}
 				}
 			// Particles
 			} else if (draw instanceof ParticleEffect particleEffect) {
-				particleEffect = particleEffect.copy(); // avoid modifying the original effect
+				ParticleEffect baseEffect = particleEffect.copy(); // avoid modifying the original effect
 				if (asPlayer != null)
-					particleEffect.source(asPlayer);
-				particleEffect.force(force);
-				particleEffect.receivers(players);
-				for (Location location : locations)
-					particleEffect.spawn(location);
+					baseEffect.source(asPlayer);
+				baseEffect.force(force);
+				baseEffect.receivers(players);
+				if (countValue != null) {
+					int clamped = (int) Math.max(0L, Math.min(countValue.longValue(), 16384L));
+					baseEffect.count(clamped);
+				}
+				Vector offsetValue = compatOffset != null ? compatOffset.getSingle(event) : null;
+				if (offsetValue != null)
+					baseEffect.offset(offsetValue.toVector3d());
+				Number extraValue = compatExtra != null ? compatExtra.getSingle(event) : null;
+				if (extraValue != null)
+					baseEffect.extra(extraValue.doubleValue());
+				for (Location location : locations) {
+					ParticleEffect scheduledEffect = baseEffect.copy();
+					runAtLocation(location, () -> scheduledEffect.spawn(location));
+				}
 			}
 		}
+	}
+
+	private void runAtLocation(Location location, Runnable runnable) {
+		if (location == null) {
+			runnable.run();
+			return;
+		}
+		if (TaskUtils.isFoliaSchedulersEnabled() && !RegionUtils.isOwnedByCurrentRegion(location)) {
+			TaskUtils.getRegionalScheduler(location).runTask(runnable);
+			return;
+		}
+		runnable.run();
+	}
+
+	private void runAtEntity(Entity entity, Runnable runnable) {
+		if (entity == null) {
+			runnable.run();
+			return;
+		}
+		if (TaskUtils.isFoliaSchedulersEnabled() && !RegionUtils.isOwnedByCurrentRegion(entity)) {
+			TaskUtils.getEntityScheduler(entity).runTask(runnable);
+			return;
+		}
+		runnable.run();
 	}
 
 	/**
@@ -150,7 +223,8 @@ public class EffPlayEffect extends Effect {
 			boolean played = false;
 			for (Entity entity : entities) {
 				if (effect.isApplicableTo(entity)) {
-					entity.playEffect(effect);
+					final EntityEffect scheduledEffect = effect;
+					runAtEntity(entity, () -> entity.playEffect(scheduledEffect));
 					played = true;
 				}
 			}

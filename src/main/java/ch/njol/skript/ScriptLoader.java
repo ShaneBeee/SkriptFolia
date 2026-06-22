@@ -810,6 +810,12 @@ public class ScriptLoader {
 			return null;
 		}
 
+		if (isMisplacedSkriptConfig(file)) {
+			Skript.warning("Skipped " + file.getName() + " because it looks like Skript's plugin config, not a script. " +
+				"Move it to plugins/Skript/config.sk or prefix it with '-' to disable it.");
+			return null;
+		}
+
 		try {
 			String name = Skript.getInstance().getDataFolder().toPath().toAbsolutePath()
 					.resolve(Skript.SCRIPTSFOLDER).relativize(file.toPath().toAbsolutePath()).toString();
@@ -819,6 +825,28 @@ public class ScriptLoader {
 		}
 
 		return null;
+	}
+
+	private static boolean isMisplacedSkriptConfig(File file) {
+		if (!"config.sk".equalsIgnoreCase(file.getName()))
+			return false;
+
+		try (Stream<String> lines = Files.lines(file.toPath())) {
+			List<String> meaningfulLines = lines
+				.map(String::trim)
+				.filter(line -> !line.isEmpty())
+				.filter(line -> !line.startsWith("#"))
+				.limit(16)
+				.collect(Collectors.toList());
+
+			boolean hasLanguage = meaningfulLines.stream().anyMatch(line -> line.equalsIgnoreCase("language: english") || line.toLowerCase(Locale.ENGLISH).startsWith("language:"));
+			boolean hasUpdateKey = meaningfulLines.stream().anyMatch(line -> line.toLowerCase(Locale.ENGLISH).startsWith("check for new version:"));
+			boolean hasAliasKey = meaningfulLines.stream().anyMatch(line -> line.toLowerCase(Locale.ENGLISH).startsWith("load default aliases:"));
+			boolean hasVersionKey = meaningfulLines.stream().anyMatch(line -> line.toLowerCase(Locale.ENGLISH).startsWith("version:"));
+			return hasLanguage && (hasUpdateKey || hasAliasKey || hasVersionKey);
+		} catch (IOException e) {
+			return false;
+		}
 	}
 
 	/**

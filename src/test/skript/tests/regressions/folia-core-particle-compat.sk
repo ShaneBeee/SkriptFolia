@@ -1,0 +1,14 @@
+test "play 60 of heart at player parses":
+	parse:
+		play 60 of heart at player
+	assert last parse logs does not contain "Can't understand" with "play <count> of <particle> at <player> must parse"
+
+test "play 15 of cloud at player parses":
+	parse:
+		play 15 of cloud at player
+	assert last parse logs does not contain "Can't understand" with "play <count> of cloud at <player> must parse"
+
+test "draw 1 of red dust at player parses":
+	parse:
+		draw 1 of red dust at player
+	assert last parse logs does not contain "Can't understand" with "draw <count> of red dust at <player> must parse"

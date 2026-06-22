@@ -49,7 +49,8 @@ public class EvtClick extends SkriptEvent {
 		);
 		Skript.registerEvent("Click", EvtClick.class, eventTypes,
 				"[(" + RIGHT + ":right|" + LEFT + ":left)(| |-)][mouse(| |-)]click[ing] [on %-entitydata/itemtype/blockdata%] [(with|using|holding) %-itemtype%]",
-				"[(" + RIGHT + ":right|" + LEFT + ":left)(| |-)][mouse(| |-)]click[ing] (with|using|holding) %itemtype% on %entitydata/itemtype/blockdata%")
+				"[(" + RIGHT + ":right|" + LEFT + ":left)(| |-)][mouse(| |-)]click[ing] (with|using|holding) %itemtype% on %entitydata/itemtype/blockdata%",
+				"[player] use [of] %-entitydata/itemtype/blockdata%")
 			.description("Called when a user clicks on a block, an entity or air with or without an item in their hand.",
 				"Please note that rightclick events with an empty hand while not looking at a block are not sent to the server, so there's no way to detect them.",
 				"Also note that a leftclick on an entity is an attack and thus not covered by the 'click' event, but the 'damage' event.")
@@ -59,8 +60,9 @@ public class EvtClick extends SkriptEvent {
 				"on rightclick on a creeper:",
 				"on click with a sword:",
 				"on click on chest[facing=north]:",
-				"on click on campfire[lit=true]:")
-			.since("1.0, 2.10 (blockdata)");
+				"on click on campfire[lit=true]:",
+				"on use of respawn anchor:")
+			.since("1.0, 2.10 (blockdata), 2.15.3-custom (use of)");
 	}
 
 	/**
@@ -82,6 +84,12 @@ public class EvtClick extends SkriptEvent {
 	@SuppressWarnings("unchecked")
 	public boolean init(Literal<?>[] args, int matchedPattern, ParseResult parseResult) {
 		click = parseResult.mark == 0 ? ANY : parseResult.mark;
+		if (matchedPattern == 2) {
+			click = RIGHT;
+			type = args[0];
+			tools = null;
+			return true;
+		}
 		type = args[matchedPattern];
 		if (type != null && !type.canReturn(ItemType.class) && !type.canReturn(BlockData.class)) {
 			Literal<EntityData<?>> entitydata = (Literal<EntityData<?>>) type;

@@ -104,7 +104,10 @@ public class ParticleEffect extends ParticleBuilder implements Debuggable {
 			}
 			input = matcher.group(2);
 		}
-		Particle particle = ENUM_PARSER.parse(input.toLowerCase(Locale.ENGLISH), context);
+		String normalizedInput = input.toLowerCase(Locale.ENGLISH);
+		Particle particle = ENUM_PARSER.parse(normalizedInput, context);
+		if (particle == null && !normalizedInput.endsWith(" particle") && !normalizedInput.endsWith(" particles"))
+			particle = ENUM_PARSER.parse(normalizedInput + " particle", context);
 		if (particle == null)
 			return null;
 		if (particle.getDataType() != Void.class) {

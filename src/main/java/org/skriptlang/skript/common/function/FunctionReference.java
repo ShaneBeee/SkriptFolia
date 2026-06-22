@@ -10,6 +10,7 @@ import ch.njol.skript.lang.function.Functions;
 import ch.njol.skript.registrations.Classes;
 import ch.njol.skript.util.LiteralUtils;
 import ch.njol.skript.util.Utils;
+import ch.njol.skript.variables.Variables;
 import com.google.common.base.Preconditions;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Event;
@@ -186,6 +187,7 @@ public final class FunctionReference<T> implements Debuggable {
 			return null;
 		}
 		FunctionEvent<?> fnEvent = new FunctionEvent<>(function);
+		Variables.findExecutionOwner(args.values()).ifPresent(fnEvent::setExecutionOwner);
 
 		if (Functions.callFunctionEvents)
 			Bukkit.getPluginManager().callEvent(fnEvent);

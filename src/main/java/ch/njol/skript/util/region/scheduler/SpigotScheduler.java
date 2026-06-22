@@ -36,12 +36,18 @@ public class SpigotScheduler implements Scheduler<BukkitTask> {
 
 	@Override
 	public SpigotTask runTaskTimer(Runnable task, long delay, long period) {
+		period = sanitizePeriod(period);
 		return new SpigotTask(SCHEDULER.runTaskTimer(TaskUtils.getPlugin(), task, delay, period));
 	}
 
 	@Override
 	public Task<BukkitTask> runTaskTimerAsync(Runnable task, long delay, long period) {
+		period = sanitizePeriod(period);
 		return new SpigotTask(SCHEDULER.runTaskTimerAsynchronously(TaskUtils.getPlugin(), task, delay, period));
+	}
+
+	private static long sanitizePeriod(long period) {
+		return Math.max(period, 1L);
 	}
 
 }
