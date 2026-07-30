@@ -3,6 +3,7 @@ package ch.njol.skript.util;
 import ch.njol.skript.Skript;
 import ch.njol.skript.localization.Language;
 import ch.njol.skript.registrations.Classes;
+import ch.njol.skript.util.region.TaskUtils;
 import ch.njol.util.NonNullPair;
 import ch.njol.util.Pair;
 import ch.njol.util.StringUtils;
@@ -511,7 +512,7 @@ public abstract class Utils {
 			listener));
 
 		// if we haven't gotten a response after a minute, let's just assume there wil never be one
-		Bukkit.getScheduler().scheduleSyncDelayedTask(skript, () -> {
+		TaskUtils.getGlobalScheduler().runTaskLater(() -> {
 
 			if (!completableFuture.isDone())
 				completableFuture.cancel(true);

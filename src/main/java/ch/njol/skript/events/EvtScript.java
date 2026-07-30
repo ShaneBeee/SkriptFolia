@@ -6,6 +6,7 @@ import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptEvent;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
 import ch.njol.skript.lang.Trigger;
+import ch.njol.skript.util.region.TaskUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Event;
 import org.jetbrains.annotations.Nullable;
@@ -70,7 +71,7 @@ public class EvtScript extends SkriptEvent {
 			trigger.execute(event);
 		} else {
 			if (Skript.getInstance().isEnabled())
-				Bukkit.getScheduler().scheduleSyncDelayedTask(Skript.getInstance(), () -> trigger.execute(event));
+				TaskUtils.getGlobalScheduler().runTask(() -> trigger.execute(event));
 		}
 	}
 	
