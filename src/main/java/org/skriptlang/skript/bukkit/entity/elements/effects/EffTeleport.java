@@ -1,6 +1,9 @@
 package org.skriptlang.skript.bukkit.entity.elements.effects;
 
 import ch.njol.skript.Skript;
+import ch.njol.skript.test.runner.TestMode;
+import org.bukkit.event.player.PlayerTeleportEvent;
+import org.jetbrains.annotations.NotNull;
 import org.skriptlang.skript.bukkit.entity.types.TeleportFlagClassInfo.SkriptTeleportFlag;
 import ch.njol.skript.doc.*;
 import ch.njol.skript.effects.Delay;
@@ -21,6 +24,8 @@ import org.jetbrains.annotations.Nullable;
 import org.skriptlang.skript.registration.SyntaxInfo;
 import org.skriptlang.skript.registration.SyntaxRegistry;
 
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 @Name("Teleport")
@@ -128,7 +133,7 @@ public class EffTeleport extends Effect {
 
 		if (!async) {
 			for (Entity entity : entityArray) {
-				entity.teleport(location, teleportFlags);
+				teleport(entity, location, teleportFlags);
 			}
 			return next;
 		}
@@ -138,7 +143,7 @@ public class EffTeleport extends Effect {
 		fixed.getWorld().getChunkAtAsync(fixed).thenAccept(ignored -> {
 			Delay.addDelayedEvent(event);
 			for (Entity entity : entityArray) {
-				entity.teleport(fixed, teleportFlags);
+				teleport(entity, fixed, teleportFlags);
 			}
 
 			// Re-set local variables
@@ -175,6 +180,31 @@ public class EffTeleport extends Effect {
 			.append("teleport", entities, "to", location)
 			.appendIf(teleportFlags != null, "retaining", teleportFlags)
 			.toString();
+	}
+
+	private void teleport(@NotNull Entity entity, @NotNull Location location, TeleportFlag[]... skriptTeleportFlags) {
+		if (location.getWorld() == null) {
+			location = location.clone();
+			location.setWorld(entity.getWorld());
+		}
+
+		if (skriptTeleportFlags == null) {
+			if (TestMode.ENABLED) {
+				entity.teleport(location);
+			} else {
+				entity.teleportAsync(location);
+			}
+			return;
+		}
+
+		Stream<TeleportFlag> teleportFlags = Arrays.stream(skriptTeleportFlags)
+			.flatMap(Stream::of)
+			.filter(Objects::nonNull);
+		if (TestMode.ENABLED) {
+			entity.teleport(location, teleportFlags.toArray(TeleportFlag[]::new));
+			return;
+		}
+		entity.teleportAsync(location, PlayerTeleportEvent.TeleportCause.PLUGIN, teleportFlags.toArray(TeleportFlag[]::new));
 	}
 
 }
