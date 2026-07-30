@@ -14,9 +14,14 @@ import ch.njol.skript.lang.Trigger;
 import ch.njol.skript.lang.TriggerItem;
 import ch.njol.skript.lang.util.SectionUtils;
 import ch.njol.skript.util.Timespan;
+import ch.njol.skript.util.region.TaskUtils;
+import ch.njol.skript.util.region.scheduler.Scheduler;
 import ch.njol.skript.variables.Variables;
 import ch.njol.util.Kleenean;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.block.Block;
+import org.bukkit.entity.Entity;
 import org.bukkit.event.Event;
 import org.jetbrains.annotations.Nullable;
 
@@ -52,11 +57,12 @@ import java.util.WeakHashMap;
 public class Delay extends EffectSection {
 
 	static {
-		Skript.registerSection(Delay.class, "(wait|halt) [for] %timespan%");
+		Skript.registerSection(Delay.class, "(wait|halt) [for] %timespan% [for %-entity/location/block%]");
 	}
 
 	@SuppressWarnings("NotNullFieldNotInitialized")
 	protected Expression<Timespan> duration;
+	private Expression<Object> object;
 
 	private @Nullable Trigger trigger;
 
@@ -93,6 +99,8 @@ public class Delay extends EffectSection {
 			return trigger != null;
 		}
 
+		this.object = (Expression<Object>) exprs[1];
+
 		getParser().setHasDelayBefore(Kleenean.TRUE);
 		return true;
 	}
@@ -113,12 +121,28 @@ public class Delay extends EffectSection {
 
 		long ticks = Math.max(duration.getAs(Timespan.TimePeriod.TICK), 1); // Minimum delay is one tick, less than it is useless!
 
+		Scheduler<?> scheduler;
+		Object object = null;
+		if (this.object != null) {
+			object = this.object.getOptionalSingle(event).orElse(null);
+		}
+
+		if (object instanceof Entity entity) {
+			scheduler = TaskUtils.getEntityScheduler(entity);
+		} else if (object instanceof Location location) {
+			scheduler = TaskUtils.getRegionalScheduler(location);
+		} else if (object instanceof Block block) {
+			scheduler = TaskUtils.getRegionalScheduler(block.getLocation());
+		} else {
+			scheduler = TaskUtils.getGlobalScheduler();
+		}
+
 		TriggerItem afterDelay = trigger != null ? trigger : getNext();
 		if (afterDelay != null) {
 			boolean isSection = trigger != null;
 			Object localVars = isSection ? Variables.copyLocalVariables(event) : Variables.removeLocals(event);
 
-			Bukkit.getScheduler().scheduleSyncDelayedTask(Skript.getInstance(), () -> {
+			scheduler.runTaskLater(() -> {
 				addDelayedEvent(event);
 				Skript.debug(getIndentation() + "... continuing after " + (System.nanoTime() - start) / 1_000_000_000. + "s");
 
